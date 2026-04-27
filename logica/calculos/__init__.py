@@ -1,0 +1,3 @@
+from .Somatorio_F import resultante_cargas
+from .Somatorio_M import momento_total_origem
+from .Reacoes_apoios import calcular_reacoes_2_apoios
