@@ -1,0 +1,63 @@
+01. Executar arquivo Testes com:
+
+python -m logica.Testes
+
+está em estrutura de pacotes. Sendo assim, executa 
+Testes.py como módulo pertencente a um pacote Python, 
+e não um arquivo solto.
+
+02. Gerar requirements para novas ferramentas/recursos
+pip freeze > requirements.txt
+
+03. Ambientes virtuais
+python -m venv .venv
+.venv\Scripts\activate
+pip install matplotlib shapely
+pip freeze > requirements.txt
+
+orientações de INTERFACE:
+
+interface 01 - escolha de apoios
+Seleciona os apoios (pino, rolete, pino e rolete, engastado)
+
+interface 02 - recebe comprimento e posições
+Recebe: 
+- comprimento da viga; 
+- posição do referencial de posição do comprimento total; 
+- posição dos apoios;
+- pode editar dados.
+
+interface 03 - indicar carregamentos
+a. adicionar carregamento:
+
+- Concentrado:
+    - intensidade
+    - posição em relação ao referencial
+
+- Distribuído
+    - Força constante:
+        - intensidade
+        - posição de inicio no referencial
+        - posição final no referencial
+
+    - Força linear:
+        - Intensidade inicial
+        - posição inicial
+        - Intensidade final
+        - posição final do carregamento
+
+Momento de binário concentrado
+    - intensidade do momento
+    - posição em relação ao referencial
+
+b. mostrar viga com carregamento e apoios
+ - pode indicar como reações
+ - atualizar a cada adição ou edição
+
+ 
+1. Calcular e mostrar as reações nos apoios. 
+2. Calcular e mostrar os diagramas de força cortante e momento fletor: 
+    a. Indicar o valor máximo (+) e mínimo (-) da força cortante na viga. 
+    b. Indicar o valor máximo (+) e mínimo (-) do momento fletor na viga. 
+    c. Mostrar um gráfico com o diagrama de força cortante na viga. 
+    d. Mostrar um gráfico com o diagrama de momento fletor na viga.
