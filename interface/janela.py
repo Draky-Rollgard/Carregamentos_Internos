@@ -191,7 +191,7 @@ painel_resultados = LabelFrame(
     bg="white",
     relief="solid",
     bd=1,
-    height=180
+    height=120
 )
 
 painel_resultados.pack(
@@ -209,8 +209,45 @@ Label(
 ).pack(expand=True)
 
 
+# ---------- Container para diagramas ----------
+frame_diagramas = Frame(centro, bg="lightblue")
+frame_diagramas.pack(fill="both", expand=True, padx=10, pady=10)
 
+#------------Diagrama Força Cortante ----------------
+painel_FC = LabelFrame(
+    frame_diagramas,
+    text="Força Cortante",
+    font=("Arial",10,"bold"),
+    bg="white",
+    relief="solid",
+    bd=1
+)
 
+painel_FC.pack(side="left", fill="both", expand=True, padx=5)
+
+Label(
+    painel_FC,
+    text="Área do diagrama de Força Cortante",
+    bg="white"
+).pack(expand=True)
+#------------ Diagrama Momento Fletor --------------
+
+painel_MF = LabelFrame(
+    frame_diagramas,
+    text="Momento Fletor",
+    font=("Arial",10,"bold"),
+    bg="white",
+    relief="solid",
+    bd=1
+)
+
+painel_MF.pack(side="left", fill="both", expand=True, padx=5)
+
+Label(
+    painel_MF,
+    text="Área do diagrama de Momento Fletor",
+    bg="white"
+).pack(expand=True)
 
 
 
