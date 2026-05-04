@@ -147,20 +147,26 @@ Label(lateral_direita, text="Lista de cargas:", bg="#f4f4f4").pack(pady=10)
 lista = Listbox(lateral_direita, width=30, height=15)
 lista.pack(padx=5)
 
-
-
 #====================== CORPO ==============================
 ''' Usar para interfaceamento 
     de plotagem das figuras e
     resultado dos cálculos'''
+#====================== CORPO ==============================
 
 centro = Frame(screen, bg="lightblue")
 centro.pack(fill="both", expand=True, padx=15, pady=15)
 
-#---------- Plotagem gráfica | Label Superior  ------------
+# -------- Container principal (divide em esquerda e direita) --------
+container_horizontal = Frame(centro, bg="lightblue")
+container_horizontal.pack(fill="both", expand=True)
 
+# ================= COLUNA ESQUERDA =================
+coluna_esquerda = Frame(container_horizontal, bg="lightblue")
+coluna_esquerda.pack(side="left", fill="both", expand=True, padx=(0,5))
+
+# ----- Desenho -----
 painel_desenho = LabelFrame(
-    centro,
+    coluna_esquerda,
     text="Desenho do Carregamento",
     font=("Arial", 10, "bold"),
     bg="white",
@@ -168,24 +174,17 @@ painel_desenho = LabelFrame(
     bd=1
 )
 
-painel_desenho.pack(
-    fill="both",
-    expand=True,
-    padx=10, 
-    pady=(0,10)
-)
+painel_desenho.pack(fill="both", expand=True, padx=5, pady=(0,10))
 
-# área interna de exemplo
 Label(
     painel_desenho,
     text="Área para mostrar a viga e os carregamentos",
     bg="white"
 ).pack(expand=True)
 
-
-# ---------- Label inferior | respostas ----------
+# ----- Resultados -----
 painel_resultados = LabelFrame(
-    centro,
+    coluna_esquerda,
     text="Resultados",
     font=("Arial", 10, "bold"),
     bg="white",
@@ -194,12 +193,7 @@ painel_resultados = LabelFrame(
     height=120
 )
 
-painel_resultados.pack(
-    fill="x",
-    padx=10,
-    pady=(10,0)
-)
-
+painel_resultados.pack(fill="x", padx=5, pady=(0,5))
 painel_resultados.pack_propagate(False)
 
 Label(
@@ -208,14 +202,13 @@ Label(
     bg="white"
 ).pack(expand=True)
 
+# ================= COLUNA DIREITA =================
+coluna_direita = Frame(container_horizontal, bg="lightblue")
+coluna_direita.pack(side="left", fill="both", expand=True, padx=(5,0))
 
-# ---------- Container para diagramas ----------
-frame_diagramas = Frame(centro, bg="lightblue")
-frame_diagramas.pack(fill="both", expand=True, padx=10, pady=10)
-
-#------------Diagrama Força Cortante ----------------
+# ----- Força Cortante -----
 painel_FC = LabelFrame(
-    frame_diagramas,
+    coluna_direita,
     text="Força Cortante",
     font=("Arial",10,"bold"),
     bg="white",
@@ -223,17 +216,17 @@ painel_FC = LabelFrame(
     bd=1
 )
 
-painel_FC.pack(side="left", fill="both", expand=True, padx=5)
+painel_FC.pack(fill="both", expand=True, padx=5, pady=(0,10))
 
 Label(
     painel_FC,
     text="Área do diagrama de Força Cortante",
     bg="white"
 ).pack(expand=True)
-#------------ Diagrama Momento Fletor --------------
 
+# ----- Momento Fletor -----
 painel_MF = LabelFrame(
-    frame_diagramas,
+    coluna_direita,
     text="Momento Fletor",
     font=("Arial",10,"bold"),
     bg="white",
@@ -241,17 +234,13 @@ painel_MF = LabelFrame(
     bd=1
 )
 
-painel_MF.pack(side="left", fill="both", expand=True, padx=5)
+painel_MF.pack(fill="both", expand=True, padx=5)
 
 Label(
     painel_MF,
     text="Área do diagrama de Momento Fletor",
     bg="white"
 ).pack(expand=True)
-
-
-
-
 
 #=================
 screen.mainloop()
