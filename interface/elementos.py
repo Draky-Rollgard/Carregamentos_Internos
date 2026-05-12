@@ -150,7 +150,6 @@ class ElementosViga:
 
     # ADICIONAR REAÇÃO
     def adicionar_reacao(self, posicao, valor):
-
         self.reacoes.append(
             (posicao, valor)
         )
