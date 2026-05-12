@@ -6,6 +6,9 @@ from tkinter import ttk
 import customtkinter as ctk
 
 from logica.carregamentos import *
+from logica.Viga import Viga
+from logica.apoios import *
+from .elementos import ElementosViga
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -113,13 +116,53 @@ Label(
     lateral_esquerda, 
     text="Comprimento da viga",
     bg="#f4f4f4").pack(anchor="w",padx=15)
-Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
+
+#Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
+entry_comprimento = Entry(lateral_esquerda)
+entry_comprimento.pack(anchor="w",padx=15, pady=5)
 
 Label(
     lateral_esquerda, 
     text="Referencial",
-    bg="#f4f4f4").pack(anchor="w",padx=15)
-Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
+    bg="#f4f4f4"
+).pack(anchor="w",padx=15)
+
+#Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
+entry_referencial = Entry(lateral_esquerda)
+entry_referencial.pack(anchor="w",padx=15, pady=5)
+
+
+viga = None
+
+def criar_viga():
+
+    global viga
+    global elementos_viga
+
+    comprimento = float(entry_comprimento.get())
+
+    viga = Viga(comprimento)
+
+    elementos_viga.comprimento = comprimento
+    elementos_viga.atualizar()
+
+    lista_reacoes.delete(0, END)
+
+    lista_reacoes.insert(
+        END,
+        f"Viga criada: L = {comprimento}"
+    )
+
+Button(
+    lateral_esquerda,
+    text="Criar Viga",
+    width=20,
+    command=criar_viga
+).pack(anchor="w", padx=15, pady=10)
+
+
+
+
 
 
 # Apoios
@@ -136,7 +179,7 @@ Label(
 
 combo_apoio = ttk.Combobox(
     lateral_esquerda,
-    values=["Pino", "Rolete", "Engastado"],
+    values=["pino", "rolete", "engaste"],
     state="readonly",
     width=16
 )
@@ -153,6 +196,7 @@ lista_apoios = Listbox(lateral_esquerda, width=25, height=6)
 lista_apoios.pack(pady=8, padx=5)
 
 # Apoios - add & rem
+'''
 def adicionar_apoio():
     tipo = combo_apoio.get()
     pos = entry_pos.get()
@@ -160,7 +204,39 @@ def adicionar_apoio():
     texto = f"{tipo} em x={pos}"
     lista_apoios.insert(END, texto)
 
+    entry_pos.delete(0, END)'''
+
+def adicionar_apoio():
+
+    global viga
+    global elementos_viga
+
+    if viga is None:
+        return
+
+    tipo = combo_apoio.get()
+    pos = float(entry_pos.get())
+
+    if tipo == "pino":
+        apoio = pino(pos)
+        elementos_viga.adicionar_apoio("Pino", pos)
+
+    elif tipo == "rolete":
+        apoio = rolete(pos)
+        elementos_viga.adicionar_apoio("Rolete", pos)
+
+    elif tipo == "engaste":
+        apoio = engaste(pos)
+        elementos_viga.adicionar_apoio("Engastado", pos)
+
+    viga.adicionar_apoio(apoio)
+
+    texto = f"{tipo} em x={pos}"
+
+    lista_apoios.insert(END, texto)
+
     entry_pos.delete(0, END)
+
 
 def remover_apoio():
 
@@ -401,9 +477,13 @@ combo_carregamento.bind(
 
 atualizar_parametros()
 
-carregamentos = []
+#carregamentos = []
 def adicionar_carregamento():
+    global viga
 
+    if viga is None:
+        return
+    
     tipo = combo_carregamento.get()
 
     # ---------------------------
@@ -415,6 +495,13 @@ def adicionar_carregamento():
             intensidade=float(campos["intensidade"].get()),
             posicao=float(campos["posicao"].get())
         )
+        elementos_viga.adicionar_carga(
+            "concentrada",
+            {
+                "x": float(campos["posicao"].get()),
+                "valor": float(campos["intensidade"].get())
+            }
+        )
 
     # ---------------------------
     # Distribuído Constante
@@ -425,6 +512,14 @@ def adicionar_carregamento():
             intensidade=float(campos["intensidade"].get()),
             posicao_inicial=float(campos["inicio"].get()),
             posicao_final=float(campos["fim"].get())
+        )
+        elementos_viga.adicionar_carga(
+            "constante",
+            {
+                "x1": float(campos["inicio"].get()),
+                "x2": float(campos["fim"].get()),
+                "valor": float(campos["intensidade"].get())
+            }
         )
 
     # ---------------------------
@@ -438,9 +533,18 @@ def adicionar_carregamento():
             posicao_inicial=float(campos["inicio"].get()),
             posicao_final=float(campos["fim"].get())
         )
+        elementos_viga.adicionar_carga(
+            "linear",
+            {
+                "x1": float(campos["inicio"].get()),
+                "x2": float(campos["fim"].get()),
+                "q1": float(campos["q1"].get()),
+                "q2": float(campos["q2"].get())
+            }
+        )
 
     # ---------------------------
-    # Distribuído Linear
+    # Momento Binário
     # ---------------------------
 
     elif tipo == "Momento Binário":
@@ -449,8 +553,17 @@ def adicionar_carregamento():
             intensidade=float(campos["intensidade"].get()),
             posicao=float(campos["posicao"].get())
         )
+        elementos_viga.adicionar_carga(
+            "momento",
+            {
+                "x": float(campos["posicao"].get()),
+                "valor": float(campos["intensidade"].get())
+            }
+        )
 
-    carregamentos.append(carga)
+    #carregamentos.append(carga)
+    viga.adicionar_carga(carga)
+
     lista.insert(
         END,
         str(type(carga).__name__)
@@ -532,8 +645,11 @@ Label(topo_desenho, text="VIGA, APOIOS E REAÇÕES", bg="#e9ecef", fg="black", f
 # CORPO
 corpo_desenho = Frame(painel_desenho, bg="white")
 corpo_desenho.pack(fill="both", expand=True, padx=1, pady=(0,1))
-Label(corpo_desenho, text="Área para mostrar a viga e os carregamentos", bg="white", fg="#555555").pack(expand=True)
-
+#Label(corpo_desenho, text="Área para mostrar a viga e os carregamentos", bg="white", fg="#555555").pack(expand=True)
+elementos_viga = ElementosViga(
+    frame=corpo_desenho,
+    comprimento=10
+)
 
 
 
@@ -623,7 +739,42 @@ Label(
 ).pack(expand=True)
 '''
 
+def calcular_reacoes():
 
+    global viga
+    global elementos_viga
+
+    if viga is None:
+        return
+
+    lista_reacoes.delete(0, END)
+
+    reacoes = viga.calcular_reacoes_2_apoios()
+
+    elementos_viga.reacoes.clear()
+
+    for nome, valor in reacoes.items():
+
+        lista_reacoes.insert(
+            END,
+            f"{nome}: {valor:.2f}"
+        )
+
+        if "A" in nome:
+            pos = 0
+        elif "B" in nome:
+            pos = viga.comprimento
+        else:
+            pos = viga.comprimento / 2
+
+        elementos_viga.adicionar_reacao(pos, valor)
+
+Button(
+    lateral_esquerda,
+    text="Calcular Reações",
+    width=20,
+    command=calcular_reacoes
+).pack(pady=10)
 
 
 #=================
