@@ -2,6 +2,7 @@
 
 import os
 from tkinter import*
+from tkinter import messagebox
 from tkinter import ttk
 import customtkinter as ctk
 
@@ -9,10 +10,9 @@ from logica.carregamentos import *
 from logica.Viga import Viga
 from logica.apoios import *
 from .elementos import ElementosViga
-
+#======================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-#==================================================
 #screen = Tk()
 screen = ctk.CTk()
 
@@ -29,7 +29,7 @@ screen.title("Projeto_Carregamentos_Internos")
 screen.config(bg="lightblue")
 #screen.geometry("1080x700")
 
-#====================== Objeto de estudo ========================
+#====================== Objeto de estudo - cabeçalho ========================
 topo = Frame(screen, bg="#1c2b39", height=25)
 topo.pack(fill="x")
 
@@ -41,7 +41,7 @@ Label(
     font=("Arial", 10, "bold")
 ).pack(pady=10)
 
-#======================Menu==========================
+#================================ Menu ======================================
 menu_principal = Menu(screen)
 screen.config(menu=menu_principal)
 
@@ -77,30 +77,12 @@ menu_principal.add_cascade(
     menu=menu_editar
 )
 
-
-
-
-
-
-
-
-
-#======================= Laterais ==========================
+#==================================== Laterais ===============================================
 ''' Usar para interfaceamento 
     de imputação de dados e
     escolha de Carregamentos'''
 
-
-
-
-
-
-
-
-
-
-
-# ---------  Lateral Esquerda  --------------
+# -------------------------  Lateral Esquerda  --------------------------------------
 lateral_esquerda = Frame(screen, bg="#f4f4f4", width=200)
 lateral_esquerda.pack(side="left", fill="y")
 
@@ -117,7 +99,6 @@ Label(
     text="Comprimento da viga",
     bg="#f4f4f4").pack(anchor="w",padx=15)
 
-#Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
 entry_comprimento = Entry(lateral_esquerda)
 entry_comprimento.pack(anchor="w",padx=15, pady=5)
 
@@ -127,10 +108,8 @@ Label(
     bg="#f4f4f4"
 ).pack(anchor="w",padx=15)
 
-#Entry(lateral_esquerda).pack(anchor="w",padx=15, pady=5)
 entry_referencial = Entry(lateral_esquerda)
 entry_referencial.pack(anchor="w",padx=15, pady=5)
-
 
 viga = None
 
@@ -139,15 +118,19 @@ def criar_viga():
     global viga
     global elementos_viga
 
-    comprimento = float(entry_comprimento.get())
-
+    try:
+        comprimento = float(entry_comprimento.get())
+    except ValueError:
+        messagebox.showerror("Erro", "Digite um comprimento válido.")
+        return
+    
     viga = Viga(comprimento)
 
     elementos_viga.comprimento = comprimento
+    elementos_viga.viga_criada = True
     elementos_viga.atualizar()
 
     lista_reacoes.delete(0, END)
-
     lista_reacoes.insert(
         END,
         f"Viga criada: L = {comprimento}"
@@ -160,12 +143,7 @@ Button(
     command=criar_viga
 ).pack(anchor="w", padx=15, pady=10)
 
-
-
-
-
-
-# Apoios
+# ======================================APOIOS=================================================
 Label(
     lateral_esquerda,
     text="APOIOS",
@@ -196,16 +174,6 @@ lista_apoios = Listbox(lateral_esquerda, width=25, height=6)
 lista_apoios.pack(pady=8, padx=5)
 
 # Apoios - add & rem
-'''
-def adicionar_apoio():
-    tipo = combo_apoio.get()
-    pos = entry_pos.get()
-
-    texto = f"{tipo} em x={pos}"
-    lista_apoios.insert(END, texto)
-
-    entry_pos.delete(0, END)'''
-
 def adicionar_apoio():
 
     global viga
@@ -215,7 +183,11 @@ def adicionar_apoio():
         return
 
     tipo = combo_apoio.get()
-    pos = float(entry_pos.get())
+    try:
+        pos = float(entry_pos.get())
+    except ValueError:
+        messagebox.showerror("Erro", "Digite uma posição válida.")
+        return
 
     if tipo == "pino":
         apoio = pino(pos)
@@ -230,11 +202,8 @@ def adicionar_apoio():
         elementos_viga.adicionar_apoio("Engastado", pos)
 
     viga.adicionar_apoio(apoio)
-
     texto = f"{tipo} em x={pos}"
-
     lista_apoios.insert(END, texto)
-
     entry_pos.delete(0, END)
 
 
@@ -284,30 +253,12 @@ lista_reacoes = Listbox(lateral_esquerda, width=25, height=6)
 lista_reacoes.pack(pady=8, padx=5)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ---------  Lateral Direita  --------------
+# -----------------------------------  Lateral Direita  ----------------------------------------------------
 lateral_direita = Frame(screen, bg="#f4f4f4", width=200)
 lateral_direita.pack(side="right", fill="y")
 
 # CARREGAMENTOS | LISTA DE CARREGAMENTOS
 Label(lateral_direita, text="CARREGAMENTOS", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(pady=15, padx=15)
-
 
 # Tipagem dos carregamentos
 Label(
@@ -354,7 +305,7 @@ def atualizar_parametros(event=None):
 
     tipo = combo_carregamento.get()
 
-    # ===========CONCENTRADO===============
+    # =========== CONCENTRADO ===============
 
     if tipo == "Concentrado":
 
@@ -376,7 +327,7 @@ def atualizar_parametros(event=None):
         campos["posicao"] = Entry(frame_parametros)
         campos["posicao"].pack(fill="x", pady=3)
 
-    # ===========DISTRIBUÍDO CONSTANTE===============
+    # =========== DISTRIBUÍDO CONSTANTE ===============
    
     elif tipo == "Distribuído Constante":
 
@@ -407,7 +358,7 @@ def atualizar_parametros(event=None):
         campos["fim"] = Entry(frame_parametros)
         campos["fim"].pack(fill="x", pady=3)
 
-    # =============DISTRIBUÍDO LINEAR=============
+    # ============= DISTRIBUÍDO LINEAR =============
     
     elif tipo == "Distribuído Linear":
 
@@ -447,7 +398,7 @@ def atualizar_parametros(event=None):
         campos["fim"] = Entry(frame_parametros)
         campos["fim"].pack(fill="x", pady=3)
     
-    # ============Momento Binário==============
+    # ============ Momento Binário ==============
         
     elif tipo == "Momento Binário":
 
@@ -477,7 +428,6 @@ combo_carregamento.bind(
 
 atualizar_parametros()
 
-#carregamentos = []
 def adicionar_carregamento():
     global viga
 
@@ -561,7 +511,6 @@ def adicionar_carregamento():
             }
         )
 
-    #carregamentos.append(carga)
     viga.adicionar_carga(carga)
 
     lista.insert(
@@ -575,12 +524,6 @@ Button(
     command=adicionar_carregamento
 ).pack(pady=10)
 
-'''
-Button(lateral_direita, text="Força Concentrada", width=22).pack(pady=5)
-Button(lateral_direita, text="Carga Distribuída", width=22).pack(pady=5)
-Button(lateral_direita, text="Momento", width=22).pack(pady=5)
-'''
-
 Label(lateral_direita, text="Lista de cargas:", bg="#f4f4f4").pack(pady=10)
 
 lista = Listbox(lateral_direita, width=30, height=15)
@@ -588,31 +531,10 @@ lista.pack(padx=5)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#====================== CORPO ==============================
+#==================================== CORPO =========================================================
 ''' Usar para interfaceamento 
     de plotagem das figuras e
     resultado dos cálculos'''
-#====================== CORPO ==============================
 
 centro = Frame(screen, bg="lightblue")
 centro.pack(fill="both", expand=True, padx=15, pady=15)
@@ -622,18 +544,13 @@ container_horizontal = Frame(centro, bg="lightblue")
 container_horizontal.pack(fill="both", expand=True)
 
 # ================= COLUNA ESQUERDA =================
-coluna_esquerda = Frame(container_horizontal, bg="lightblue")
-coluna_esquerda.pack(side="left", fill="both", expand=True, padx=(0,5))
+paineis = Frame(container_horizontal, bg="lightblue")
+paineis.pack(side="left", fill="both", expand=True, padx=(0,5))
 
 
 
-
-
-
-
-
-# =================== CARD - VIGA, APOIOS E REAÇÕES ===============================
-painel_desenho = Frame(coluna_esquerda, bg="#bfc3c7", bd=1)
+# ============================================= CARD - VIGA, APOIOS E REAÇÕES ===========================================================
+painel_desenho = Frame(paineis, bg="#bfc3c7", bd=1)
 painel_desenho.pack(fill="both", expand=True, padx=5, pady=(0,10))
 
 # CABEÇALHO
@@ -645,20 +562,14 @@ Label(topo_desenho, text="VIGA, APOIOS E REAÇÕES", bg="#e9ecef", fg="black", f
 # CORPO
 corpo_desenho = Frame(painel_desenho, bg="white")
 corpo_desenho.pack(fill="both", expand=True, padx=1, pady=(0,1))
-#Label(corpo_desenho, text="Área para mostrar a viga e os carregamentos", bg="white", fg="#555555").pack(expand=True)
+
 elementos_viga = ElementosViga(
     frame=corpo_desenho,
     comprimento=10
 )
 
-
-
-
-
-
-
-# ============================== DIAGRAMAS ========================================
-painel_diagramas = Frame(coluna_esquerda, bg="#bfc3c7", bd=1)
+# ============================================================== DIAGRAMAS ============================================================
+painel_diagramas = Frame(paineis, bg="#bfc3c7", bd=1)
 painel_diagramas.pack(fill="both", expand=True, padx=5, pady=(0,10))
 
 # CABEÇALHO
@@ -672,13 +583,8 @@ corpo_diagramas = Frame(painel_diagramas, bg="white")
 corpo_diagramas.pack(fill="both", expand=True, padx=1, pady=(0,1))
 Label(corpo_diagramas, text="Área dos diagramas de Força Cortante e Momento Fletor", bg="white", fg="#555555").pack(expand=True)
 
-
-
-
-
-
-# ============================== RESULTADOS ========================================
-painel_resultados = Frame(coluna_esquerda, bg="#bfc3c7", bd=1, height=120)
+# ================================================== RESULTADOS ======================================================================
+painel_resultados = Frame(paineis, bg="#bfc3c7", bd=1, height=120)
 painel_resultados.pack(fill="x", padx=5, pady=(0,10))
 painel_resultados.pack_propagate(False)
 # CABEÇALHO
@@ -691,53 +597,6 @@ Label(topo_resultados, text="RESULTADOS", bg="#e9ecef", fg="black", font=("Arial
 corpo_resultados = Frame(painel_resultados, bg="white")
 corpo_resultados.pack(fill="both", expand=True, padx=1, pady=(0,1))
 Label(corpo_resultados, text="Área para reações, cortante e momento", bg="white", fg="#555555").pack(expand=True)
-
-
-
-
-
-
-'''
-# ================= COLUNA DIREITA =================
-coluna_direita = Frame(container_horizontal, bg="lightblue")
-coluna_direita.pack(side="left", fill="both", expand=True, padx=(5,0))
-
-# ----- Força Cortante -----
-painel_FC = LabelFrame(
-    coluna_direita,
-    text="Força Cortante",
-    font=("Arial",10,"bold"),
-    bg="white",
-    relief="solid",
-    bd=1
-)
-
-painel_FC.pack(fill="both", expand=True, padx=5, pady=(0,10))
-
-Label(
-    painel_FC,
-    text="Área do diagrama de Força Cortante",
-    bg="white"
-).pack(expand=True)
-
-# ----- Momento Fletor -----
-painel_MF = LabelFrame(
-    coluna_direita,
-    text="Momento Fletor",
-    font=("Arial",10,"bold"),
-    bg="white",
-    relief="solid",
-    bd=1
-)
-
-painel_MF.pack(fill="both", expand=True, padx=5)
-
-Label(
-    painel_MF,
-    text="Área do diagrama de Momento Fletor",
-    bg="white"
-).pack(expand=True)
-'''
 
 def calcular_reacoes():
 
@@ -776,6 +635,6 @@ Button(
     command=calcular_reacoes
 ).pack(pady=10)
 
-
-#=================
-screen.mainloop()
+#====================================================================================================================================
+def iniciar():
+    screen.mainloop()

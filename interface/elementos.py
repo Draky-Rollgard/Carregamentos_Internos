@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.patches import Polygon
 from matplotlib.patches import Circle
 from matplotlib.patches import FancyArrow
+from matplotlib.patches import Rectangle
 
 class ElementosViga:
 
@@ -31,6 +32,7 @@ class ElementosViga:
 
         self.apoios = []
         self.reacoes = []
+        self.viga_criada = False
 
         self.atualizar()
 
@@ -42,12 +44,13 @@ class ElementosViga:
         self.ax.set_xlim(-1, self.comprimento + 1)
 
         self.ax.set_ylim(-3, 3)
-
+        
+        '''
         self.ax.axhline(
             0,
             color='black',
             linewidth=4
-        )
+        )'''
 
         self.ax.set_yticks([])
 
@@ -64,11 +67,58 @@ class ElementosViga:
     # VIGA
     def desenhar_viga(self):
 
+        altura_total = 0.28
+        altura_centro = 0.16
+
+        y_base = -altura_total / 2
+
+        # Corpo central azul
+        corpo = Rectangle(
+            (0, -altura_centro / 2),
+            self.comprimento,
+            altura_centro,
+            facecolor='#1f77b4',
+            edgecolor='none',
+            zorder=2
+        )
+
+        self.ax.add_patch(corpo)
+        # ====== LINHAS =========
+        # superior
         self.ax.plot(
             [0, self.comprimento],
+            [altura_total / 2, altura_total / 2],
+            color='black',
+            linewidth=4,
+            solid_capstyle='round',
+            zorder=3
+        )
+
+        # inferior
+        self.ax.plot(
+            [0, self.comprimento],
+            [-altura_total / 2, -altura_total / 2],
+            color='black',
+            linewidth=4,
+            solid_capstyle='round',
+            zorder=3
+        )
+
+        # Laterais da viga
+        self.ax.plot(
             [0, 0],
-            linewidth=8,
-            color='black'
+            [-altura_total / 2, altura_total / 2],
+            color='black',
+            linewidth=1,
+            zorder=3
+        )
+
+        self.ax.plot(
+            [self.comprimento, self.comprimento],
+            [-altura_total / 2, altura_total / 2],
+            color='black',
+            linewidth=1,
+            zorder=3
         )
 
     # PINO
@@ -142,7 +192,9 @@ class ElementosViga:
 
     # ADICIONAR APOIO
     def adicionar_apoio(self, tipo, posicao):
-
+    
+        self.viga_criada = True
+        
         self.apoios.append(
             (tipo, posicao)
         )
@@ -272,7 +324,7 @@ class ElementosViga:
     
     # ADICIONAR CARGA
     def adicionar_carga(self, tipo, dados):
-
+        self.viga_criada = True
         self.cargas.append((tipo, dados))
 
         self.atualizar()
@@ -282,7 +334,8 @@ class ElementosViga:
 
         self.configurar()
 
-        self.desenhar_viga()
+        if self.viga_criada:
+            self.desenhar_viga()
 
         for tipo, posicao in self.apoios:
 
