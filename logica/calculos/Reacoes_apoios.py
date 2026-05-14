@@ -13,6 +13,9 @@ def calcular_reacoes_2_apoios(self):
 
     A = self.apoios[0].posicao
     B = self.apoios[1].posicao
+    
+    if A == B:
+        raise ValueError("Os apoios não podem ocupar a mesma posição.")
 
     soma_forcas = self.resultante_cargas()
     soma_momentos_A = 0
@@ -42,10 +45,13 @@ def calcular_reacoes_2_apoios(self):
         elif isinstance(carga, Momento_Binario):
             soma_momentos_A += carga.intensidade
 
-        # ΣM(A)=0
-        By = -soma_momentos_A / (B - A)
+    # ΣM(A)=0
+    By = -soma_momentos_A / (B - A)
 
-        # ΣFy=0
-        Ay = soma_forcas - By
+    # ΣFy=0
+    Ay = soma_forcas - By
 
-        return {"Ay": Ay, "By": By}
+    return {
+        "Ay": Ay,
+        "By": By
+    }

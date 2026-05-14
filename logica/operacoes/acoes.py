@@ -16,7 +16,7 @@ def remover_apoio(viga, indice):
 def remover_carga(viga, indice):
     if viga is None:
         return False
-    if indice <0 or indice >= len(viga.apoios):
+    if indice <0 or indice >= len(viga.cargas):
         return False
     viga.cargas.pop(indice)
 
