@@ -44,13 +44,6 @@ class ElementosViga:
         self.ax.set_xlim(-1, self.comprimento + 1)
 
         self.ax.set_ylim(-3, 3)
-        
-        '''
-        self.ax.axhline(
-            0,
-            color='black',
-            linewidth=4
-        )'''
 
         self.ax.set_yticks([])
 

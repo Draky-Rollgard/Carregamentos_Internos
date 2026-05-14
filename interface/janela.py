@@ -9,6 +9,7 @@ import customtkinter as ctk
 from logica.carregamentos import *
 from logica.Viga import Viga
 from logica.apoios import *
+from logica.operacoes.acoes import remover_apoio, remover_carga
 from .elementos import ElementosViga
 #======================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -207,12 +208,26 @@ def adicionar_apoio():
     entry_pos.delete(0, END)
 
 
-def remover_apoio():
+def remover_apoio_interface():
+    global viga
+    global elementos_viga
 
     selecionado = lista_apoios.curselection()
+    if not selecionado:
+        return
+    
+    indice = selecionado[0]
+    sucesso = remover_apoio(viga, indice)
 
-    if selecionado:
-        lista_apoios.delete(selecionado)
+    if not sucesso:
+        return
+    
+    lista_apoios.delete(indice)
+    if indice <len(elementos_viga.apoios):
+        elementos_viga.apoios.pop(indice)
+
+    elementos_viga.reacoes.clear()
+    elementos_viga.atualizar()
 
 # Apoios - botões add & rem
 frame_botoes_apoio = Frame(
@@ -235,7 +250,7 @@ Button(
     frame_botoes_apoio,
     text="Remover",
     width=10,
-    command=remover_apoio
+    command=remover_apoio_interface
 ).pack(
     side="left",
     padx=3
@@ -529,7 +544,32 @@ Label(lateral_direita, text="Lista de cargas:", bg="#f4f4f4").pack(pady=10)
 lista = Listbox(lateral_direita, width=30, height=15)
 lista.pack(padx=5)
 
+def remover_carregamento_interface():
+    global viga
+    global elementos_viga
 
+    selecionado = lista.curselection()
+    if not selecionado:
+        return
+    
+    indice = selecionado[0]
+    sucesso = remover_carga(viga, indice)
+
+    if not sucesso:
+        return
+    
+    lista.delete(indice)
+    if indice <len(elementos_viga.cargas):
+        elementos_viga.cargas.pop(indice)
+
+    elementos_viga.reacoes.clear()
+    elementos_viga.atualizar()
+
+Button(
+    lateral_direita,
+    text="Remover Carregamento",
+    command=remover_carregamento_interface
+).pack(pady=5)
 
 #==================================== CORPO =========================================================
 ''' Usar para interfaceamento 
