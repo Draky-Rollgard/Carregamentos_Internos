@@ -36,6 +36,9 @@ class ElementosViga:
 
         self.atualizar()
 
+    def escala_visual(self):
+        return max(0.25, self.comprimento * 0.02)
+
     # CONFIGURAÇÃO
     def configurar(self):
 
@@ -43,7 +46,7 @@ class ElementosViga:
 
         self.ax.set_xlim(-1, self.comprimento + 1)
 
-        self.ax.set_ylim(-3, 3)
+        self.ax.set_ylim(-5, 5)
 
         self.ax.set_yticks([])
 
@@ -60,8 +63,8 @@ class ElementosViga:
     # VIGA
     def desenhar_viga(self):
 
-        altura_total = 0.28
-        altura_centro = 0.16
+        altura_total = 0.3
+        altura_centro = 0.3
 
         y_base = -altura_total / 2
 
@@ -82,7 +85,7 @@ class ElementosViga:
             [0, self.comprimento],
             [altura_total / 2, altura_total / 2],
             color='black',
-            linewidth=4,
+            linewidth=2,
             solid_capstyle='round',
             zorder=3
         )
@@ -92,7 +95,7 @@ class ElementosViga:
             [0, self.comprimento],
             [-altura_total / 2, -altura_total / 2],
             color='black',
-            linewidth=4,
+            linewidth=2,
             solid_capstyle='round',
             zorder=3
         )
@@ -116,34 +119,47 @@ class ElementosViga:
 
     # PINO
     def desenhar_pino(self, x):
+        s = self.escala_visual()
 
         triangulo = Polygon(
             [
-                (x - 0.4, -0.8),
-                (x + 0.4, -0.8),
-                (x, 0)
+                (x - s, -1),
+                (x + s, -1),
+                (x, -0.1)
             ],
             closed=True,
-            color='#1f77b4'
+            color='#1f77b4',
+            edgecolor='black',
+            linewidth=1.5,
+            zorder=4
         )
 
         self.ax.add_patch(triangulo)
+        
+        
 
     # ROLETE
     def desenhar_rolete(self, x):
 
         self.desenhar_pino(x)
+        s = self.escala_visual()
 
         roda1 = Circle(
-            (x - 0.15, -1.0),
-            0.1,
-            color='gray'
+            (x - s*0.4, -1.1),
+            s*0.2,
+            facecolor='gray',
+            edgecolor='black',
+            linewidth=0.5,
+            zorder=4
         )
 
         roda2 = Circle(
-            (x + 0.15, -1.0),
-            0.1,
-            color='gray'
+            (x + s*0.4, -1.1),
+            s*0.2,
+            facecolor='gray',
+            edgecolor='black',
+            linewidth=0.5,
+            zorder=4
         )
 
         self.ax.add_patch(roda1)
@@ -156,7 +172,7 @@ class ElementosViga:
             [x, x],
             [-2, 2],
             linewidth=10,
-            color='black'
+            color='gray'
         )
 
     # REAÇÃO
@@ -164,9 +180,9 @@ class ElementosViga:
 
         seta = FancyArrow(
             x,
-            -2,
+            -4,
             0,
-            1.2,
+            2,
             width=0.08,
             color='red'
         )
@@ -197,7 +213,7 @@ class ElementosViga:
     def desenhar_carga_concentrada(self, x, intensidade):
 
         cor = 'green' if intensidade > 0 else 'red'
-        altura = 1.5 if intensidade > 0 else -1.5
+        altura = 3 if intensidade > 0 else -3
 
         seta = FancyArrow(
             x,
@@ -230,9 +246,9 @@ class ElementosViga:
 
             seta = FancyArrow(
                 xi,
-                2,
+                4,
                 0,
-                -1.2,
+                -2.5,
                 width=0.03,
                 color='blue'
             )
@@ -241,14 +257,14 @@ class ElementosViga:
 
         self.ax.plot(
             [x1, x2],
-            [2.2, 2.2], 
+            [4.2, 4.2], 
             color='blue',
             linewidth=2
         )
 
         self.ax.text(
             (x1 + x2) / 2,
-            2.5,
+            4.5,
             f"q={intensidade}",
             ha='center',
             color='blue'
@@ -263,11 +279,11 @@ class ElementosViga:
             xi = x1 + (x2 - x1) * i / passos
             qi = q1 + (q2 - q1) * i / passos
 
-            altura = 2 + qi * 0.5
+            altura = 3 + qi * 0.8
 
             seta = FancyArrow(
                 xi,
-                2,
+                4,
                 0,
                 altura - 2,
                 width=0.03,
