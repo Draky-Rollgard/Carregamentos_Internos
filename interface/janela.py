@@ -1,680 +1,316 @@
-#pip install tk
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-import os
-from tkinter import*
-from tkinter import messagebox
-from tkinter import ttk
-import customtkinter as ctk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
-from logica.carregamentos import *
 from logica.Viga import Viga
-from logica.apoios import *
+from logica.apoios import pino, rolete, engaste
+from logica.carregamentos import Carregamento_Concentrado, Constante, Linear, Momento_Binario
 from logica.operacoes.acoes import remover_apoio, remover_carga
 from .elementos import ElementosViga
-#======================================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from .graficos import plotar_diagramas
 
-#screen = Tk()
-screen = ctk.CTk()
-
-l = 1080
-h = 700
-
-largura_tela = screen.winfo_screenwidth()
-altura_tela = screen.winfo_screenheight()
-pos_x = int((largura_tela / 2) - (l / 2))
-pos_y = int((altura_tela / 2) - (h / 1.7))
-
-screen.geometry(f"{l}x{h}+{pos_x}+{pos_y}")
-screen.title("Projeto_Carregamentos_Internos")
-screen.config(bg="lightblue")
-#screen.geometry("1080x700")
-
-#====================== Objeto de estudo - cabeçalho ========================
-topo = Frame(screen, bg="#1c2b39", height=25)
-topo.pack(fill="x")
-
-Label(
-    topo,
-    text="Mecânica Geral\nEstática - Carregamentos internos",
-    fg="white",
-    bg="#1c2b39",
-    font=("Arial", 10, "bold")
-).pack(pady=10)
-
-#================================ Menu ======================================
-menu_principal = Menu(screen)
-screen.config(menu=menu_principal)
-
-# Menu de arquivo
-menu_arq = Menu(menu_principal, tearoff=0)
-
-menu_arq.add_command(
-    label="Novo",
-    command=lambda: print("Clique em novo")
-)
-
-menu_arq.add_command(
-    label="Abrir",
-    command=lambda: print("Clique em abrir")
-)
-
-menu_arq.add_separator()
-menu_arq.add_command(
-    label="Sair",
-    command=screen.quit
-)
-
-menu_principal.add_cascade(
-    label="Arquivo",
-    menu=menu_arq
-)
-
-# -------- Menu Editar --------
-menu_editar = Menu(menu_principal, tearoff=0)
-
-menu_principal.add_cascade(
-    label="Editar",
-    menu=menu_editar
-)
-
-#==================================== Laterais ===============================================
-''' Usar para interfaceamento 
-    de imputação de dados e
-    escolha de Carregamentos'''
-
-# -------------------------  Lateral Esquerda  --------------------------------------
-lateral_esquerda = Frame(screen, bg="#f4f4f4", width=200)
-lateral_esquerda.pack(side="left", fill="y")
-
-# DADOS DA VIGA | APOIOS
-# geometria
-Label(
-    lateral_esquerda,
-    text="GEOMETRIA",
-    font=("Arial", 8, "bold"),
-    bg="#f4f4f4"
-    ).pack(anchor="w",pady=10, padx=15)
-Label(
-    lateral_esquerda, 
-    text="Comprimento da viga",
-    bg="#f4f4f4").pack(anchor="w",padx=15)
-
-entry_comprimento = Entry(lateral_esquerda)
-entry_comprimento.pack(anchor="w",padx=15, pady=5)
-
-Label(
-    lateral_esquerda, 
-    text="Referencial",
-    bg="#f4f4f4"
-).pack(anchor="w",padx=15)
-
-entry_referencial = Entry(lateral_esquerda)
-entry_referencial.pack(anchor="w",padx=15, pady=5)
-
+screen = None
 viga = None
+elementos_viga = None
 
-def criar_viga():
-
-    global viga
-    global elementos_viga
-
-    try:
-        comprimento = float(entry_comprimento.get())
-    except ValueError:
-        messagebox.showerror("Erro", "Digite um comprimento válido.")
-        return
-    
-    viga = Viga(comprimento)
-
-    elementos_viga.comprimento = comprimento
-    elementos_viga.viga_criada = True
-    elementos_viga.atualizar()
-
-    lista_reacoes.delete(0, END)
-    lista_reacoes.insert(
-        END,
-        f"Viga criada: L = {comprimento}"
-    )
-
-Button(
-    lateral_esquerda,
-    text="Criar Viga",
-    width=20,
-    command=criar_viga
-).pack(anchor="w", padx=15, pady=10)
-
-# ======================================APOIOS=================================================
-Label(
-    lateral_esquerda,
-    text="APOIOS",
-    font=("Arial", 8, "bold"),
-    bg="#f4f4f4").pack(anchor="w",padx=15, pady=5)
-
-Label(
-    lateral_esquerda,
-    text="Tipo",
-    bg="#f4f4f4").pack(anchor="w",padx=15)
-
-combo_apoio = ttk.Combobox(
-    lateral_esquerda,
-    values=["pino", "rolete", "engaste"],
-    state="readonly",
-    width=16
-)
-combo_apoio.pack(anchor="w",padx=15, pady=5)
-combo_apoio.current(0)
-
-#Apoio - input posicao
-Label(lateral_esquerda, text="Posição", bg="#f4f4f4").pack(anchor="w",padx=15, pady=5)
-entry_pos = Entry(lateral_esquerda, width=20)
-entry_pos.pack(anchor="w",padx=15, pady=5)
-
-# Apoios - listar
-lista_apoios = Listbox(lateral_esquerda, width=25, height=6)
-lista_apoios.pack(pady=8, padx=5)
-
-# Apoios - add & rem
-def adicionar_apoio():
-
-    global viga
-    global elementos_viga
-
-    if viga is None:
-        return
-
-    tipo = combo_apoio.get()
-    try:
-        pos = float(entry_pos.get())
-    except ValueError:
-        messagebox.showerror("Erro", "Digite uma posição válida.")
-        return
-
-    if tipo == "pino":
-        apoio = pino(pos)
-        elementos_viga.adicionar_apoio("Pino", pos)
-
-    elif tipo == "rolete":
-        apoio = rolete(pos)
-        elementos_viga.adicionar_apoio("Rolete", pos)
-
-    elif tipo == "engaste":
-        apoio = engaste(pos)
-        elementos_viga.adicionar_apoio("Engastado", pos)
-
-    viga.adicionar_apoio(apoio)
-    texto = f"{tipo} em x={pos}"
-    lista_apoios.insert(END, texto)
-    entry_pos.delete(0, END)
-
-
-def remover_apoio_interface():
-    global viga
-    global elementos_viga
-
-    selecionado = lista_apoios.curselection()
-    if not selecionado:
-        return
-    
-    indice = selecionado[0]
-    sucesso = remover_apoio(viga, indice)
-
-    if not sucesso:
-        return
-    
-    lista_apoios.delete(indice)
-    if indice <len(elementos_viga.apoios):
-        elementos_viga.apoios.pop(indice)
-
-    elementos_viga.reacoes.clear()
-    elementos_viga.atualizar()
-
-# Apoios - botões add & rem
-frame_botoes_apoio = Frame(
-    lateral_esquerda,
-    bg="#f4f4f4"
-)
-frame_botoes_apoio.pack(pady=5)
-
-Button(
-    frame_botoes_apoio,
-    text="Adicionar",
-    width=10,
-    command=adicionar_apoio
-).pack(
-    side="left",
-    padx=3
-)
-
-Button(
-    frame_botoes_apoio,
-    text="Remover",
-    width=10,
-    command=remover_apoio_interface
-).pack(
-    side="left",
-    padx=3
-)
-
-# Lista dados calculados de reações na viga (por somatorio Força ou Momento)
-Label(
-    lateral_esquerda,
-    text="REAÇÕES (calculadas)",
-    font=("Arial", 8, "bold"),
-    bg="#f4f4f4"
-    ).pack(anchor="w",pady=10, padx=15)
-
-lista_reacoes = Listbox(lateral_esquerda, width=25, height=6)
-lista_reacoes.pack(pady=8, padx=5)
-
-
-# -----------------------------------  Lateral Direita  ----------------------------------------------------
-lateral_direita = Frame(screen, bg="#f4f4f4", width=200)
-lateral_direita.pack(side="right", fill="y")
-
-# CARREGAMENTOS | LISTA DE CARREGAMENTOS
-Label(lateral_direita, text="CARREGAMENTOS", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(pady=15, padx=15)
-
-# Tipagem dos carregamentos
-Label(
-    lateral_direita,
-    text="Tipo de carregamento",
-    bg="#f4f4f4"
-).pack(anchor="w", padx=15, pady=(10,0))
-
-combo_carregamento = ttk.Combobox(
-    lateral_direita,
-    values=[
-        "Concentrado",
-        "Distribuído Constante",
-        "Distribuído Linear",
-        "Momento Binário"
-    ],
-    state="readonly",
-    width=22
-)
-
-combo_carregamento.pack(anchor="w", padx=15, pady=5)
-combo_carregamento.current(0)
-
-frame_parametros = Frame(
-    lateral_direita,
-    bg="#f4f4f4"
-)
-
-frame_parametros.pack(
-    fill="x",
-    padx=15,
-    pady=10
-)
-
-campos = {}
-
-def atualizar_parametros(event=None):
-
-    # limpa widgets antigos
-    for widget in frame_parametros.winfo_children():
-        widget.destroy()
-
-    campos.clear()
-
-    tipo = combo_carregamento.get()
-
-    # =========== CONCENTRADO ===============
-
-    if tipo == "Concentrado":
-
-        Label(
-            frame_parametros,
-            text="Intensidade",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["intensidade"] = Entry(frame_parametros)
-        campos["intensidade"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["posicao"] = Entry(frame_parametros)
-        campos["posicao"].pack(fill="x", pady=3)
-
-    # =========== DISTRIBUÍDO CONSTANTE ===============
-   
-    elif tipo == "Distribuído Constante":
-
-        Label(
-            frame_parametros,
-            text="Intensidade",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["intensidade"] = Entry(frame_parametros)
-        campos["intensidade"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição inicial",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["inicio"] = Entry(frame_parametros)
-        campos["inicio"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição final",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["fim"] = Entry(frame_parametros)
-        campos["fim"].pack(fill="x", pady=3)
-
-    # ============= DISTRIBUÍDO LINEAR =============
-    
-    elif tipo == "Distribuído Linear":
-
-        Label(
-            frame_parametros,
-            text="Intensidade inicial",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["q1"] = Entry(frame_parametros)
-        campos["q1"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Intensidade final",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["q2"] = Entry(frame_parametros)
-        campos["q2"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição inicial",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["inicio"] = Entry(frame_parametros)
-        campos["inicio"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição final",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["fim"] = Entry(frame_parametros)
-        campos["fim"].pack(fill="x", pady=3)
-    
-    # ============ Momento Binário ==============
-        
-    elif tipo == "Momento Binário":
-
-        Label(
-            frame_parametros,
-            text="Momento",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["intensidade"] = Entry(frame_parametros)
-        campos["intensidade"].pack(fill="x", pady=3)
-
-        Label(
-            frame_parametros,
-            text="Posição",
-            bg="#f4f4f4"
-        ).pack(anchor="w")
-
-        campos["posicao"] = Entry(frame_parametros)
-        campos["posicao"].pack(fill="x", pady=3)
-
-
-combo_carregamento.bind(
-    "<<ComboboxSelected>>",
-    atualizar_parametros
-)
-
-atualizar_parametros()
-
-def adicionar_carregamento():
-    global viga
-
-    if viga is None:
-        return
-    
-    tipo = combo_carregamento.get()
-
-    # ---------------------------
-    # Concentrado
-    # ---------------------------
-    if tipo == "Concentrado":
-
-        carga = Carregamento_Concentrado(
-            intensidade=float(campos["intensidade"].get()),
-            posicao=float(campos["posicao"].get())
-        )
-        elementos_viga.adicionar_carga(
-            "concentrada",
-            {
-                "x": float(campos["posicao"].get()),
-                "valor": float(campos["intensidade"].get())
-            }
-        )
-
-    # ---------------------------
-    # Distribuído Constante
-    # ---------------------------
-    elif tipo == "Distribuído Constante":
-
-        carga = Constante(
-            intensidade=float(campos["intensidade"].get()),
-            posicao_inicial=float(campos["inicio"].get()),
-            posicao_final=float(campos["fim"].get())
-        )
-        elementos_viga.adicionar_carga(
-            "constante",
-            {
-                "x1": float(campos["inicio"].get()),
-                "x2": float(campos["fim"].get()),
-                "valor": float(campos["intensidade"].get())
-            }
-        )
-
-    # ---------------------------
-    # Distribuído Linear
-    # ---------------------------
-    elif tipo == "Distribuído Linear":
-
-        carga = Linear(
-            intensidade_inicial=float(campos["q1"].get()),
-            intensidade_final=float(campos["q2"].get()),
-            posicao_inicial=float(campos["inicio"].get()),
-            posicao_final=float(campos["fim"].get())
-        )
-        elementos_viga.adicionar_carga(
-            "linear",
-            {
-                "x1": float(campos["inicio"].get()),
-                "x2": float(campos["fim"].get()),
-                "q1": float(campos["q1"].get()),
-                "q2": float(campos["q2"].get())
-            }
-        )
-
-    # ---------------------------
-    # Momento Binário
-    # ---------------------------
-
-    elif tipo == "Momento Binário":
-
-        carga = Momento_Binario(
-            intensidade=float(campos["intensidade"].get()),
-            posicao=float(campos["posicao"].get())
-        )
-        elementos_viga.adicionar_carga(
-            "momento",
-            {
-                "x": float(campos["posicao"].get()),
-                "valor": float(campos["intensidade"].get())
-            }
-        )
-
-    viga.adicionar_carga(carga)
-
-    lista.insert(
-        END,
-        str(type(carga).__name__)
-    )
-
-Button(
-    lateral_direita,
-    text="Adicionar carregamento",
-    command=adicionar_carregamento
-).pack(pady=10)
-
-Label(lateral_direita, text="Lista de cargas:", bg="#f4f4f4").pack(pady=10)
-
-lista = Listbox(lateral_direita, width=30, height=15)
-lista.pack(padx=5)
-
-def remover_carregamento_interface():
-    global viga
-    global elementos_viga
-
-    selecionado = lista.curselection()
-    if not selecionado:
-        return
-    
-    indice = selecionado[0]
-    sucesso = remover_carga(viga, indice)
-
-    if not sucesso:
-        return
-    
-    lista.delete(indice)
-    if indice <len(elementos_viga.cargas):
-        elementos_viga.cargas.pop(indice)
-
-    elementos_viga.reacoes.clear()
-    elementos_viga.atualizar()
-
-Button(
-    lateral_direita,
-    text="Remover Carregamento",
-    command=remover_carregamento_interface
-).pack(pady=5)
-
-#==================================== CORPO =========================================================
-''' Usar para interfaceamento 
-    de plotagem das figuras e
-    resultado dos cálculos'''
-
-centro = Frame(screen, bg="lightblue")
-centro.pack(fill="both", expand=True, padx=15, pady=15)
-
-# -------- Container principal (divide em esquerda e direita) --------
-container_horizontal = Frame(centro, bg="lightblue")
-container_horizontal.pack(fill="both", expand=True)
-
-# ================= COLUNA ESQUERDA =================
-paineis = Frame(container_horizontal, bg="lightblue")
-paineis.pack(side="left", fill="both", expand=True, padx=(0,5))
-
-
-
-# ============================================= CARD - VIGA, APOIOS E REAÇÕES ===========================================================
-painel_desenho = Frame(paineis, bg="#bfc3c7", bd=1)
-painel_desenho.pack(fill="both", expand=True, padx=5, pady=(0,10))
-
-# CABEÇALHO
-topo_desenho = Frame(painel_desenho, bg="#e9ecef", height=30)
-topo_desenho.pack(fill="x")
-topo_desenho.pack_propagate(False)
-Label(topo_desenho, text="VIGA, APOIOS E REAÇÕES", bg="#e9ecef", fg="black", font=("Arial", 8, "bold")).pack(anchor="w", padx=10, pady=6)
-
-# CORPO
-corpo_desenho = Frame(painel_desenho, bg="white")
-corpo_desenho.pack(fill="both", expand=True, padx=1, pady=(0,1))
-
-elementos_viga = ElementosViga(
-    frame=corpo_desenho,
-    comprimento=10
-)
-
-# ============================================================== DIAGRAMAS ============================================================
-painel_diagramas = Frame(paineis, bg="#bfc3c7", bd=1)
-painel_diagramas.pack(fill="both", expand=True, padx=5, pady=(0,10))
-
-# CABEÇALHO
-topo_diagramas = Frame(painel_diagramas, bg="#e9ecef", height=30)
-topo_diagramas.pack(fill="x")
-topo_diagramas.pack_propagate(False)
-Label(topo_diagramas, text="DIAGRAMAS", bg="#e9ecef", fg="black", font=("Arial", 8, "bold")).pack(anchor="w", padx=10, pady=6)
-
-# CORPO
-corpo_diagramas = Frame(painel_diagramas, bg="white")
-corpo_diagramas.pack(fill="both", expand=True, padx=1, pady=(0,1))
-Label(corpo_diagramas, text="Área dos diagramas de Força Cortante e Momento Fletor", bg="white", fg="#555555").pack(expand=True)
-
-# ================================================== RESULTADOS ======================================================================
-painel_resultados = Frame(paineis, bg="#bfc3c7", bd=1, height=120)
-painel_resultados.pack(fill="x", padx=5, pady=(0,10))
-painel_resultados.pack_propagate(False)
-# CABEÇALHO
-topo_resultados = Frame(painel_resultados, bg="#e9ecef", height=30)
-topo_resultados.pack(fill="x")
-topo_resultados.pack_propagate(False)
-Label(topo_resultados, text="RESULTADOS", bg="#e9ecef", fg="black", font=("Arial", 8, "bold")).pack(anchor="w", padx=10, pady=6)
-
-# CORPO
-corpo_resultados = Frame(painel_resultados, bg="white")
-corpo_resultados.pack(fill="both", expand=True, padx=1, pady=(0,1))
-Label(corpo_resultados, text="Área para reações, cortante e momento", bg="white", fg="#555555").pack(expand=True)
-
-def calcular_reacoes():
-
-    global viga
-    global elementos_viga
-
-    if viga is None:
-        return
-
-    lista_reacoes.delete(0, END)
-
-    reacoes = viga.calcular_reacoes_2_apoios()
-
-    elementos_viga.reacoes.clear()
-
-    for nome, valor in reacoes.items():
-
-        lista_reacoes.insert(
-            END,
-            f"{nome}: {valor:.2f}"
-        )
-
-        if "A" in nome:
-            pos = 0
-        elif "B" in nome:
-            pos = viga.comprimento
-        else:
-            pos = viga.comprimento / 2
-
-        elementos_viga.adicionar_reacao(pos, valor)
-
-Button(
-    lateral_esquerda,
-    text="Calcular Reações",
-    width=20,
-    command=calcular_reacoes
-).pack(pady=10)
-
-#====================================================================================================================================
 def iniciar():
+    global screen, viga, elementos_viga
+
+    screen = tk.Tk()
+    screen.title("Projeto_Carregamentos_Internos")
+    #screen.geometry("1080x700")
+    screen.state('zoomed')
+    screen.configure(bg="lightblue")
+
+    menu_principal = tk.Menu(screen)
+    screen.config(menu=menu_principal)
+    menu_arq = tk.Menu(menu_principal, tearoff=0)
+    menu_arq.add_command(label="Novo", command=lambda: novo_projeto())
+    menu_arq.add_separator()
+    menu_arq.add_command(label="Sair", command=screen.quit)
+    menu_principal.add_cascade(label="Arquivo", menu=menu_arq)
+    menu_principal.add_cascade(label="Editar", menu=tk.Menu(menu_principal, tearoff=0))
+
+    topo = tk.Frame(screen, bg="#1c2b39", height=55)
+    topo.pack(fill="x")
+    tk.Label(
+        topo,
+        text="Mecânica Geral\nEstática - Carregamentos internos",
+        fg="white",
+        bg="#1c2b39",
+        font=("Arial", 10, "bold"),
+    ).pack(pady=10)
+
+    lateral_esquerda = tk.Frame(screen, bg="#f4f4f4", width=170)
+    lateral_esquerda.pack(side="left", fill="y")
+
+    lateral_direita = tk.Frame(screen, bg="#f4f4f4", width=180)
+    lateral_direita.pack(side="right", fill="y")
+
+    centro = tk.Frame(screen, bg="lightblue")
+    centro.pack(side="left", fill="both", expand=True, padx=12, pady=12)
+
+    # =============================== GEOMETRIA ===============================
+    tk.Label(lateral_esquerda, text="GEOMETRIA", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(anchor="w", pady=10, padx=12)
+    tk.Label(lateral_esquerda, text="Comprimento da viga", bg="#f4f4f4").pack(anchor="w", padx=12)
+    entry_comprimento = tk.Entry(lateral_esquerda, width=18)
+    entry_comprimento.pack(anchor="w", padx=12, pady=5)
+    tk.Label(lateral_esquerda, text="Referencial", bg="#f4f4f4").pack(anchor="w", padx=12)
+    entry_referencial = tk.Entry(lateral_esquerda, width=18)
+    entry_referencial.pack(anchor="w", padx=12, pady=5)
+
+    # =============================== CENTRO: VIGA ============================
+    frame_viga = tk.LabelFrame(centro, text="VIGA, APOIOS E REAÇÕES", font=("Arial", 8, "bold"), bg="white")
+    frame_viga.pack(fill="both", expand=True, pady=(0, 8))
+    fig_viga = Figure(figsize=(7.2, 3.3), dpi=100)
+    ax_viga = fig_viga.add_subplot(111)
+    canvas_viga = FigureCanvasTkAgg(fig_viga, master=frame_viga)
+    canvas_viga.get_tk_widget().pack(fill="both", expand=True)
+    elementos_viga = ElementosViga(ax_viga, canvas_viga, 10)
+    elementos_viga.atualizar()
+
+    frame_diagramas = tk.LabelFrame(centro, text="DIAGRAMAS", font=("Arial", 8, "bold"), bg="white")
+    frame_diagramas.pack(fill="both", expand=True, pady=(0, 8))
+    fig_diagramas = Figure(figsize=(7.2, 2.2), dpi=100)
+    ax_placeholder = fig_diagramas.add_subplot(111)
+    ax_placeholder.axis("off")
+    ax_placeholder.text(0.5, 0.5, "Área dos diagramas de Força Cortante e Momento Fletor", ha="center", va="center", fontsize=8)
+    canvas_diagramas = FigureCanvasTkAgg(fig_diagramas, master=frame_diagramas)
+    canvas_diagramas.get_tk_widget().pack(fill="both", expand=True)
+
+    frame_resultados = tk.LabelFrame(centro, text="RESULTADOS", font=("Arial", 8, "bold"), bg="white")
+    frame_resultados.pack(fill="x")
+    resultados_var = tk.StringVar(value="Área para reações, cortante e momento")
+    label_resultados = tk.Label(frame_resultados, textvariable=resultados_var, bg="white", justify="left", anchor="w", font=("Arial", 9))
+    label_resultados.pack(fill="x", padx=14, pady=16)
+
+    # =============================== FUNÇÕES =================================
+    def limpar_listas_visuais():
+        lista_apoios.delete(0, tk.END)
+        lista_cargas.delete(0, tk.END)
+        resultados_var.set("Área para reações, cortante e momento")
+        fig_diagramas.clear()
+        ax = fig_diagramas.add_subplot(111)
+        ax.axis("off")
+        ax.text(0.5, 0.5, "Área dos diagramas de Força Cortante e Momento Fletor", ha="center", va="center", fontsize=8)
+        canvas_diagramas.draw_idle()
+
+    def criar_viga():
+        global viga
+        try:
+            comprimento = float(entry_comprimento.get().replace(",", "."))
+            referencial = float(entry_referencial.get().replace(",", ".") or 0)
+            viga = Viga(comprimento, referencial)
+        except ValueError as erro:
+            messagebox.showerror("Erro", str(erro) if str(erro) else "Digite um comprimento válido e maior que zero.")
+            return
+
+        elementos_viga.comprimento = comprimento
+        elementos_viga.viga_criada = True
+        elementos_viga.limpar()
+        limpar_listas_visuais()
+        resultados_var.set(f"Viga criada: L = {comprimento:g} m | Referencial = {referencial:g} m")
+
+    def novo_projeto():
+        global viga
+        viga = None
+        entry_comprimento.delete(0, tk.END)
+        entry_referencial.delete(0, tk.END)
+        entry_pos.delete(0, tk.END)
+        elementos_viga.viga_criada = False
+        elementos_viga.limpar()
+        limpar_listas_visuais()
+
+    def adicionar_apoio_interface():
+        global viga
+        if viga is None:
+            messagebox.showerror("Erro", "Crie a viga antes de adicionar apoios.")
+            return
+        try:
+            pos = float(entry_pos.get().replace(",", "."))
+            tipo = combo_apoio.get()
+            if tipo == "pino":
+                apoio = pino(pos)
+                texto_tipo = "Pino"
+            elif tipo == "rolete":
+                apoio = rolete(pos)
+                texto_tipo = "Rolete"
+            else:
+                apoio = engaste(pos)
+                texto_tipo = "Engastado"
+            viga.adicionar_apoio(apoio)
+        except ValueError as erro:
+            messagebox.showerror("Erro", str(erro))
+            return
+
+        elementos_viga.adicionar_apoio(texto_tipo, pos)
+        lista_apoios.insert(tk.END, f"{tipo} em x={pos:g}")
+        entry_pos.delete(0, tk.END)
+
+    def remover_apoio_interface():
+        global viga
+        selecionado = lista_apoios.curselection()
+        if not selecionado or viga is None:
+            return
+        indice = selecionado[0]
+        if remover_apoio(viga, indice):
+            lista_apoios.delete(indice)
+            elementos_viga.remover_apoio(indice)
+
+    def atualizar_parametros(event=None):
+        for widget in frame_parametros.winfo_children():
+            widget.destroy()
+        campos.clear()
+        tipo = combo_carregamento.get()
+
+        def campo(nome, rotulo):
+            tk.Label(frame_parametros, text=rotulo, bg="#f4f4f4").pack(anchor="w")
+            entrada = tk.Entry(frame_parametros, width=22)
+            entrada.pack(anchor="w", pady=4)
+            campos[nome] = entrada
+
+        if tipo == "Concentrado":
+            campo("intensidade", "Intensidade")
+            campo("posicao", "Posição")
+        elif tipo == "Distribuído Constante":
+            campo("intensidade", "Intensidade")
+            campo("inicio", "Posição inicial")
+            campo("fim", "Posição final")
+        elif tipo == "Distribuído Linear":
+            campo("q1", "Intensidade inicial")
+            campo("inicio", "Posição inicial")
+            campo("q2", "Intensidade final")
+            campo("fim", "Posição final")
+        else:
+            campo("intensidade", "Intensidade do momento")
+            campo("posicao", "Posição")
+
+    def valor(nome):
+        return float(campos[nome].get().replace(",", "."))
+
+    def adicionar_carregamento_interface():
+        global viga
+        if viga is None:
+            messagebox.showerror("Erro", "Crie a viga antes de adicionar carregamentos.")
+            return
+        try:
+            tipo = combo_carregamento.get()
+            if tipo == "Concentrado":
+                carga = Carregamento_Concentrado(valor("intensidade"), valor("posicao"))
+                dados = {"x": carga.posicao, "valor": carga.intensidade}
+                tipo_desenho = "concentrada"
+            elif tipo == "Distribuído Constante":
+                carga = Constante(valor("intensidade"), valor("inicio"), valor("fim"))
+                dados = {"x1": carga.posicao_inicial, "x2": carga.posicao_final, "valor": carga.intensidade}
+                tipo_desenho = "constante"
+            elif tipo == "Distribuído Linear":
+                carga = Linear(valor("q1"), valor("q2"), valor("inicio"), valor("fim"))
+                dados = {"x1": carga.posicao_inicial, "x2": carga.posicao_final, "q1": carga.intensidade_inicial, "q2": carga.intensidade_final}
+                tipo_desenho = "linear"
+            else:
+                carga = Momento_Binario(valor("intensidade"), valor("posicao"))
+                dados = {"x": carga.posicao, "valor": carga.intensidade}
+                tipo_desenho = "momento"
+            viga.adicionar_carga(carga)
+        except ValueError as erro:
+            messagebox.showerror("Erro", str(erro))
+            return
+
+        elementos_viga.adicionar_carga(tipo_desenho, dados)
+        lista_cargas.insert(tk.END, str(carga))
+        for entrada in campos.values():
+            entrada.delete(0, tk.END)
+
+    def remover_carregamento_interface():
+        global viga
+        selecionado = lista_cargas.curselection()
+        if not selecionado or viga is None:
+            return
+        indice = selecionado[0]
+        if remover_carga(viga, indice):
+            lista_cargas.delete(indice)
+            elementos_viga.remover_carga(indice)
+
+    def calcular_reacoes_e_diagramas():
+        if viga is None:
+            messagebox.showerror("Erro", "Crie a viga primeiro.")
+            return
+        try:
+            reacoes = viga.calcular_reacoes_2_apoios()
+            xs, vs, ms = plotar_diagramas(fig_diagramas, canvas_diagramas, viga)
+        except ValueError as erro:
+            messagebox.showerror("Erro", str(erro))
+            return
+
+        elementos_viga.atualizar()
+        v_max = max(vs) if vs else 0.0
+        v_min = min(vs) if vs else 0.0
+        m_max = max(ms) if ms else 0.0
+        m_min = min(ms) if ms else 0.0
+
+        linhas = []
+        if reacoes["tipo"] == "engaste":
+            linhas.append(f"Reação vertical no engaste: {reacoes['Ry']:.2f} N")
+            linhas.append(f"Momento de reação no engaste: {reacoes['M']:.2f} N.m")
+        else:
+            a1 = reacoes["apoio_1"]
+            a2 = reacoes["apoio_2"]
+            linhas.append(f"Reação em {a1.tipo} x={a1.posicao:g}: {reacoes['R1']:.2f} N")
+            linhas.append(f"Reação em {a2.tipo} x={a2.posicao:g}: {reacoes['R2']:.2f} N")
+        linhas.append(f"Força Cortante Máx (+): {v_max:.2f} N")
+        linhas.append(f"Força Cortante Mín (-): {v_min:.2f} N")
+        linhas.append(f"Momento Fletor Máx (+): {m_max:.2f} N.m")
+        linhas.append(f"Momento Fletor Mín (-): {m_min:.2f} N.m")
+        resultados_var.set("   |   ".join(linhas))
+
+    # =============================== WIDGETS ESQUERDA ========================
+    tk.Button(lateral_esquerda, text="Criar Viga", width=20, command=criar_viga).pack(anchor="w", padx=12, pady=10)
+
+    tk.Label(lateral_esquerda, text="APOIOS", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(anchor="w", padx=12, pady=5)
+    tk.Label(lateral_esquerda, text="Tipo", bg="#f4f4f4").pack(anchor="w", padx=12)
+    combo_apoio = ttk.Combobox(lateral_esquerda, values=["pino", "rolete", "engaste"], state="readonly", width=16)
+    combo_apoio.pack(anchor="w", padx=12, pady=5)
+    combo_apoio.current(0)
+
+    tk.Label(lateral_esquerda, text="Posição", bg="#f4f4f4").pack(anchor="w", padx=12, pady=5)
+    entry_pos = tk.Entry(lateral_esquerda, width=18)
+    entry_pos.pack(anchor="w", padx=12, pady=5)
+
+    lista_apoios = tk.Listbox(lateral_esquerda, width=25, height=6)
+    lista_apoios.pack(pady=8, padx=5)
+
+    frame_botoes_apoios = tk.Frame(lateral_esquerda, bg="#f4f4f4")
+    frame_botoes_apoios.pack(anchor="w", padx=4)
+    tk.Button(frame_botoes_apoios, text="Adicionar", command=adicionar_apoio_interface).pack(side="left", padx=2)
+    tk.Button(frame_botoes_apoios, text="Remover", command=remover_apoio_interface).pack(side="left", padx=2)
+
+    tk.Label(lateral_esquerda, text="REAÇÕES (calculadas)", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(anchor="w", padx=12, pady=12)
+    tk.Button(lateral_esquerda, text="Calcular Reações", width=20, command=calcular_reacoes_e_diagramas).pack(anchor="w", padx=12, pady=8)
+
+    # =============================== WIDGETS DIREITA =========================
+    tk.Label(lateral_direita, text="CARREGAMENTOS", font=("Arial", 8, "bold"), bg="#f4f4f4").pack(anchor="center", pady=16)
+    tk.Label(lateral_direita, text="Tipo de carregamento", bg="#f4f4f4").pack(anchor="w", padx=12)
+    combo_carregamento = ttk.Combobox(
+        lateral_direita,
+        values=["Concentrado", "Distribuído Constante", "Distribuído Linear", "Momento Binário"],
+        state="readonly",
+        width=22,
+    )
+    combo_carregamento.pack(anchor="w", padx=12, pady=5)
+    combo_carregamento.current(0)
+
+    campos = {}
+    frame_parametros = tk.Frame(lateral_direita, bg="#f4f4f4")
+    frame_parametros.pack(anchor="w", padx=12, pady=8)
+    combo_carregamento.bind("<<ComboboxSelected>>", atualizar_parametros)
+    atualizar_parametros()
+
+    tk.Button(lateral_direita, text="Adicionar carregamento", command=adicionar_carregamento_interface).pack(pady=8)
+    tk.Label(lateral_direita, text="Lista de cargas:", bg="#f4f4f4").pack(pady=8)
+    lista_cargas = tk.Listbox(lateral_direita, width=30, height=15)
+    lista_cargas.pack(padx=5)
+    tk.Button(lateral_direita, text="Remover Carregamento", command=remover_carregamento_interface).pack(pady=8)
+
     screen.mainloop()
