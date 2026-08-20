@@ -1,9 +1,15 @@
+GITIGNORE
 # Byte-compiled / cache
 __pycache__/
 *.py[cod]
 *$py.class
-
+ 
 # Virtual environments
 venv/
 .venv/
 env/
+ 
+# PyInstaller build artifacts
+build/
+dist/
+*.spec.bak
